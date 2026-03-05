@@ -52,6 +52,24 @@
       "script": "src/workflows/weekly-report.js",
       "args": "--shopId=example-shop",
       "description": "Báo cáo tuần: doanh thu, top sản phẩm, tồn kho thấp, xu hướng"
+    },
+    {
+      "id": "anomaly-check",
+      "name": "anomaly-check",
+      "enabled": false,
+      "schedule": "0 * * * *",
+      "script": "src/intelligence/anomaly-detector.js",
+      "args": "--shopId=example-shop",
+      "description": "Hourly anomaly detection: flags >30% deviation from 4-week same-hour average"
+    },
+    {
+      "id": "customer-winback",
+      "name": "customer-winback",
+      "enabled": false,
+      "schedule": "0 10 * * 1",
+      "script": "src/workflows/customer-winback.js",
+      "args": "--shopId=example-shop",
+      "description": "Weekly win-back: sends Zalo messages to at-risk and lost RFM customer segments"
     }
   ]
 }

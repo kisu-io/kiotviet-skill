@@ -1,5 +1,9 @@
 # Plan: KiotViet Shop Automation — Full Product
 
+> **Status as of 2026-03-05**: v1.0 is complete (see v2 state in CLAUDE.md). Dashboard wired to real data. Workflows deployed. Current sprint: Zalo OA + customer win-back + anomaly detection + webhook server. See CHANGELOG.md for history.
+
+---
+
 ## Context
 
 The current kiotviet skill is a read-only BI layer (8 query scripts, 3 Discord cron jobs) running inside OpenClaw. The goal is to evolve it into a **sellable SaaS product** for Vietnamese SME shop owners on KiotViet, delivering:

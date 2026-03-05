@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp,
@@ -12,10 +13,12 @@ import {
   Play,
   BarChart3,
   ArrowUpRight,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Area,
   AreaChart,
@@ -33,90 +36,6 @@ function formatVND(n: number) {
     .replace(/,/g, ".")
     .concat(" ₫");
 }
-
-// --- Mock data for demo ---
-const stats = [
-  {
-    title: "Doanh thu hôm nay",
-    value: formatVND(12_450_000),
-    change: +8.2,
-    icon: DollarSign,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-400/10",
-  },
-  {
-    title: "Đơn hàng",
-    value: "34",
-    change: +12.5,
-    icon: ShoppingCart,
-    color: "text-blue-400",
-    bgColor: "bg-blue-400/10",
-  },
-  {
-    title: "Sản phẩm sắp hết",
-    value: "7",
-    change: -2,
-    icon: Package,
-    color: "text-amber-400",
-    bgColor: "bg-amber-400/10",
-  },
-  {
-    title: "Cảnh báo",
-    value: "3",
-    change: 0,
-    icon: AlertTriangle,
-    color: "text-red-400",
-    bgColor: "bg-red-400/10",
-  },
-];
-
-const weeklyRevenue = [
-  { day: "T2", revenue: 8_200_000, previous: 7_800_000 },
-  { day: "T3", revenue: 9_100_000, previous: 8_500_000 },
-  { day: "T4", revenue: 7_600_000, previous: 9_200_000 },
-  { day: "T5", revenue: 11_300_000, previous: 8_900_000 },
-  { day: "T6", revenue: 12_450_000, previous: 10_100_000 },
-  { day: "T7", revenue: 14_800_000, previous: 12_300_000 },
-  { day: "CN", revenue: 10_200_000, previous: 11_000_000 },
-];
-
-const recentActivity = [
-  {
-    id: 1,
-    type: "order",
-    text: "Đơn hàng #4521 — 3 sản phẩm",
-    amount: "450.000 ₫",
-    time: "5 phút trước",
-  },
-  {
-    id: 2,
-    type: "alert",
-    text: "Áo thun Basic White — còn 3 cái",
-    amount: null,
-    time: "12 phút trước",
-  },
-  {
-    id: 3,
-    type: "order",
-    text: "Đơn hàng #4520 — 1 sản phẩm",
-    amount: "890.000 ₫",
-    time: "28 phút trước",
-  },
-  {
-    id: 4,
-    type: "workflow",
-    text: "Smart Restock đã tạo đề xuất PO",
-    amount: null,
-    time: "1 giờ trước",
-  },
-  {
-    id: 5,
-    type: "order",
-    text: "Đơn hàng #4519 — 5 sản phẩm",
-    amount: "2.150.000 ₫",
-    time: "2 giờ trước",
-  },
-];
 
 const container = {
   hidden: { opacity: 0 },
@@ -139,7 +58,121 @@ function TrendIcon({ change }: { change: number }) {
   return <Minus className="size-3.5 text-muted-foreground" />;
 }
 
+type OverviewData = {
+  kpiCards: {
+    todayRevenue: number;
+    todayOrders: number;
+    weekRevenue: number;
+    weekRevenueChange: number;
+    monthRevenue: number;
+    monthRevenueChange: number;
+    lowStockCount: number;
+  };
+  revenueByDay: { date: string; revenue: number; orders: number }[];
+  recentOrders: {
+    id: string;
+    customer: string;
+    total: number;
+    status: string;
+    time: string;
+  }[];
+  lowStockProducts: {
+    id: number;
+    code: string;
+    name: string;
+    category: string;
+    onHand: number;
+    priority: string;
+  }[];
+};
+
 export default function OverviewPage() {
+  const [data, setData] = useState<OverviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/overview")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) setError(d.error);
+        else setData(d);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (error) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <AlertTriangle className="mx-auto size-8 text-amber-400 mb-2" />
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading || !data) {
+    return (
+      <div className="flex flex-col gap-6 p-4 md:p-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <Skeleton className="h-16 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Đang tải dữ liệu...
+        </div>
+      </div>
+    );
+  }
+
+  const { kpiCards, revenueByDay, recentOrders, lowStockProducts } = data;
+  const weekChange = kpiCards.weekRevenueChange ?? 0;
+
+  const stats = [
+    {
+      title: "Doanh thu hôm nay",
+      value: formatVND(kpiCards.todayRevenue),
+      change: weekChange,
+      icon: DollarSign,
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-400/10",
+    },
+    {
+      title: "Đơn hàng hôm nay",
+      value: String(kpiCards.todayOrders),
+      change: 0,
+      icon: ShoppingCart,
+      color: "text-blue-400",
+      bgColor: "bg-blue-400/10",
+    },
+    {
+      title: "Sản phẩm sắp hết",
+      value: String(kpiCards.lowStockCount),
+      change: kpiCards.lowStockCount > 0 ? -1 : 0,
+      icon: Package,
+      color: "text-amber-400",
+      bgColor: "bg-amber-400/10",
+    },
+    {
+      title: "Doanh thu tuần",
+      value: formatVND(kpiCards.weekRevenue),
+      change: weekChange,
+      icon: BarChart3,
+      color: "text-purple-400",
+      bgColor: "bg-purple-400/10",
+    },
+  ];
+
   return (
     <motion.div
       className="flex flex-col gap-6 p-4 md:p-6"
@@ -172,8 +205,9 @@ export default function OverviewPage() {
                               : "text-muted-foreground"
                         }
                       >
-                        {stat.change > 0 ? "+" : ""}
-                        {stat.change}%
+                        {stat.change !== 0
+                          ? `${stat.change > 0 ? "+" : ""}${stat.change}%`
+                          : "—"}
                       </span>
                       <span className="text-muted-foreground">vs tuần trước</span>
                     </div>
@@ -201,21 +235,27 @@ export default function OverviewPage() {
                   Doanh thu tuần
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  So sánh tuần này với tuần trước
+                  7 ngày gần nhất
                 </p>
               </div>
-              <Badge
-                variant="secondary"
-                className="gap-1 text-emerald-400 border-emerald-400/20 bg-emerald-400/10"
-              >
-                <TrendingUp className="size-3" />
-                +12.3%
-              </Badge>
+              {weekChange !== 0 && (
+                <Badge
+                  variant="secondary"
+                  className={`gap-1 ${weekChange >= 0 ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/10" : "text-red-400 border-red-400/20 bg-red-400/10"}`}
+                >
+                  {weekChange >= 0 ? (
+                    <TrendingUp className="size-3" />
+                  ) : (
+                    <TrendingDown className="size-3" />
+                  )}
+                  {weekChange > 0 ? "+" : ""}{weekChange}%
+                </Badge>
+              )}
             </CardHeader>
             <CardContent className="pt-0">
               <div className="h-[260px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={weeklyRevenue}>
+                  <AreaChart data={revenueByDay}>
                     <defs>
                       <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                         <stop
@@ -229,18 +269,6 @@ export default function OverviewPage() {
                           stopOpacity={0}
                         />
                       </linearGradient>
-                      <linearGradient id="colorPrevious" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="5%"
-                          stopColor="oklch(0.5 0 0)"
-                          stopOpacity={0.15}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="oklch(0.5 0 0)"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
                     </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -248,7 +276,7 @@ export default function OverviewPage() {
                       vertical={false}
                     />
                     <XAxis
-                      dataKey="day"
+                      dataKey="date"
                       axisLine={false}
                       tickLine={false}
                       tick={{ fontSize: 12, fill: "oklch(0.6 0 0)" }}
@@ -277,20 +305,11 @@ export default function OverviewPage() {
                     />
                     <Area
                       type="monotone"
-                      dataKey="previous"
-                      stroke="oklch(0.45 0 0)"
-                      strokeWidth={1.5}
-                      strokeDasharray="4 4"
-                      fill="url(#colorPrevious)"
-                      name="Tuần trước"
-                    />
-                    <Area
-                      type="monotone"
                       dataKey="revenue"
                       stroke="oklch(0.65 0.2 145)"
                       strokeWidth={2}
                       fill="url(#colorRevenue)"
-                      name="Tuần này"
+                      name="Doanh thu"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -314,40 +333,56 @@ export default function OverviewPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-1">
-              {recentActivity.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-accent/50 transition-colors"
-                >
-                  <div
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${a.type === "order"
-                        ? "bg-blue-400/10 text-blue-400"
-                        : a.type === "alert"
-                          ? "bg-amber-400/10 text-amber-400"
-                          : "bg-emerald-400/10 text-emerald-400"
-                      }`}
-                  >
-                    {a.type === "order" ? (
-                      <ShoppingCart className="size-3.5" />
-                    ) : a.type === "alert" ? (
-                      <AlertTriangle className="size-3.5" />
-                    ) : (
-                      <BarChart3 className="size-3.5" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">{a.text}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {a.time}
-                    </p>
-                  </div>
-                  {a.amount && (
-                    <span className="text-xs font-semibold text-emerald-400">
-                      +{a.amount}
-                    </span>
+              {recentOrders.length === 0 && lowStockProducts.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  Chưa có hoạt động hôm nay
+                </p>
+              ) : (
+                <>
+                  {recentOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-400/10 text-blue-400">
+                        <ShoppingCart className="size-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate">
+                          {order.id} — {order.customer}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {order.time}
+                        </p>
+                      </div>
+                      {order.total > 0 && (
+                        <span className="text-xs font-semibold text-emerald-400">
+                          +{formatVND(order.total)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {lowStockProducts.length > 0 && recentOrders.length > 0 && (
+                    <div className="border-t border-border/30 my-1" />
                   )}
-                </div>
-              ))}
+                  {lowStockProducts.slice(0, 3).map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-400">
+                        <AlertTriangle className="size-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate">{p.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Còn {p.onHand} — {p.priority === "critical" ? "Cấp bách" : "Cảnh báo"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </CardContent>
           </Card>
         </motion.div>

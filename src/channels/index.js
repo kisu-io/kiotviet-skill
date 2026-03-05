@@ -2,8 +2,9 @@
 
 const discord = require('./discord');
 const telegram = require('./telegram');
+const zalo = require('./zalo');
 
-const CHANNELS = { discord, telegram };
+const CHANNELS = { discord, telegram, zalo };
 
 async function send(config, message) {
   const primary = config.channels?.primary;

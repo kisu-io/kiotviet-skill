@@ -6,3 +6,4 @@ node_modules/
 shops/*.json
 !shops/example-shop.json
 shops/.tokens/
+.playwright-mcp/
