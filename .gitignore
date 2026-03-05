@@ -1,4 +1,8 @@
 scripts/.token
 .env
 *.env
+!.env.example
 node_modules/
+shops/*.json
+!shops/example-shop.json
+shops/.tokens/

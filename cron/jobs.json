@@ -18,12 +18,40 @@
       "description": "Low stock alert for products below 10 units"
     },
     {
+      "id": "smart-restock",
+      "name": "smart-restock",
+      "enabled": true,
+      "schedule": "0 7 * * *",
+      "script": "src/workflows/smart-restock.js",
+      "args": "--shopId=example-shop",
+      "description": "AI demand forecast + auto PO suggestions for critical stock items"
+    },
+    {
+      "id": "daily-briefing",
+      "name": "daily-briefing",
+      "enabled": true,
+      "schedule": "30 7 * * *",
+      "script": "src/workflows/daily-briefing.js",
+      "args": "--shopId=example-shop",
+      "description": "Vietnamese morning brief: yesterday sales, WoW revenue, low stock alerts"
+    },
+    {
+      "id": "invoice-reminder",
+      "name": "invoice-reminder",
+      "enabled": true,
+      "schedule": "0 9 * * *",
+      "script": "src/workflows/invoice-reminder.js",
+      "args": "--shopId=example-shop",
+      "description": "Nhắc nợ hoá đơn quá hạn: 7 ngày nhắc nhẹ, 14 ngày nhắc mạnh, 30+ ngày cảnh báo"
+    },
+    {
       "id": "weekly-report",
       "name": "weekly-report",
-      "enabled": false,
+      "enabled": true,
       "schedule": "0 9 * * 1",
-      "script": "scripts/get_sales_report.js",
-      "description": "Weekly executive business summary"
+      "script": "src/workflows/weekly-report.js",
+      "args": "--shopId=example-shop",
+      "description": "Báo cáo tuần: doanh thu, top sản phẩm, tồn kho thấp, xu hướng"
     }
   ]
 }

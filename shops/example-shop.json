@@ -1,0 +1,30 @@
+{
+  "shopId": "example-shop",
+  "retailer": "your-retailer-name",
+  "clientId": "",
+  "clientSecret": "",
+  "branchId": null,
+  "channels": {
+    "primary": "discord",
+    "discord": {
+      "webhookUrl": ""
+    },
+    "telegram": {
+      "botToken": "",
+      "chatId": ""
+    }
+  },
+  "workflows": {
+    "dailyBriefing": true,
+    "smartRestock": true,
+    "invoiceReminder": true,
+    "weeklyReport": true,
+    "autoCreatePO": false,
+    "lowStockThreshold": 10,
+    "restockCoverDays": 14,
+    "overdueInvoiceDays": 7,
+    "topProductsCount": 5,
+    "customerSegments": true,
+    "pricingAdvisor": true
+  }
+}

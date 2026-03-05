@@ -1,8 +1,15 @@
 {
-  "name": "kiotviet-skill-node",
+  "name": "kiotviet-shop-automation",
   "version": "1.0.0",
-  "description": "KiotViet POS Integration Skill (Node.js) — No external dependencies",
+  "description": "AI-powered shop automation SaaS for KiotViet POS",
   "private": true,
-  "scripts": {},
-  "dependencies": {}
+  "scripts": {
+    "daily-briefing": "node src/workflows/daily-briefing.js --shopId=example-shop",
+    "smart-restock": "node src/workflows/smart-restock.js --shopId=example-shop",
+    "invoice-reminder": "node src/workflows/invoice-reminder.js --shopId=example-shop",
+    "weekly-report": "node src/workflows/weekly-report.js --shopId=example-shop"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
 }

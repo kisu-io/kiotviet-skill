@@ -1,72 +1,94 @@
-# KiotViet POS Integration Skill
+# KiotViet Gateway — Shop Automation SaaS
 
-Business intelligence layer on top of [KiotViet](https://www.kiotviet.vn/) POS. Query sales, inventory, orders, invoices, and customers via the KiotViet public API. Built with pure Node.js — zero external dependencies.
+AI-powered business intelligence and automation for Vietnamese SME shop owners on [KiotViet](https://www.kiotviet.vn/) POS. Real-time dashboard, automated workflows, and omnichannel notifications.
 
-## Setup
+## Features
 
-### 1. Get API credentials
+**Dashboard** — Real-time KiotViet data across 7 pages: overview KPIs, inventory, orders, customer RFM segments, workflows, channels, settings. Password-protected.
 
-In KiotViet admin panel: **Cài đặt cửa hàng → Kết nối API**
+**4 Automated Workflows**
+| Workflow | Schedule | What it does |
+|----------|----------|-------------|
+| Daily Briefing | 07:30 daily | Yesterday's revenue, WoW trends, low stock alerts |
+| Smart Restock | 07:00 daily | 30-day demand forecast, auto-PO for critical items |
+| Invoice Reminder | 09:00 daily | Overdue invoice tiers: 7d polite, 14d firm, 30d+ flag |
+| Weekly Report | 09:00 Monday | Executive summary: revenue, top products, RFM, pricing |
 
-Copy your `Client ID` and `Client Secret`.
+**4 Intelligence Modules**
+- Demand Forecast — stockout prediction + order quantity suggestions
+- Revenue Insights — week-over-week and month-over-month analysis
+- Customer Segments — RFM scoring (Champions, Loyal, At-Risk, Lost)
+- Pricing Advisor — slow movers (discount) vs fast movers (hold/increase)
 
-### 2. Set environment variables
+**9 API Modules**: invoices, products, customers, orders, suppliers, purchase-orders, branches, employees, promotions
+
+**2 Notification Channels**: Discord webhook, Telegram Bot API
+
+## Quick Start
 
 ```bash
-export KIOTVIET_CLIENT_ID="your_client_id"
-export KIOTVIET_CLIENT_SECRET="your_client_secret"
-export KIOTVIET_RETAILER="your_store_name"
+# 1. Configure credentials
+cp .env.example .env
+# Edit .env with your KiotViet API credentials
+
+# 2. Configure shop
+cp shops/example-shop.json shops/my-shop.json
+# Edit with your retailer name
+
+# 3. Test connection
+node src/api/client.js
+
+# 4. Run your first report
+node src/workflows/daily-briefing.js --shopId=my-shop
+
+# 5. Start dashboard
+cd dashboard && npm install && npm run dev
+# Open http://localhost:3000
 ```
 
-Or create a `.env` file (never commit this):
+See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions.
+
+## Architecture
+
 ```
-KIOTVIET_CLIENT_ID=your_client_id
-KIOTVIET_CLIENT_SECRET=your_client_secret
-KIOTVIET_RETAILER=your_store_name
+src/api/           — 9 KiotViet API modules (invoices, products, customers, etc.)
+src/intelligence/  — 4 AI analysis modules (demand forecast, RFM, pricing, revenue)
+src/workflows/     — 4 automated workflows (daily briefing, restock, invoice, weekly)
+src/channels/      — 2 notification channels (Discord, Telegram) + router
+src/config/        — Multi-tenant config loader + schema validation
+dashboard/         — Next.js 16 dashboard with 7 pages + API routes
+shops/             — Per-shop JSON configuration
+cron/              — Scheduled job definitions
+docs/              — Setup, workflow, and channel documentation
+scripts/           — 14 standalone CLI tools
 ```
 
-### 3. Test authentication
+## CLI Scripts
+
+All scripts output JSON to stdout. No npm install required (pure Node.js).
 
 ```bash
-node scripts/api_client.js
-# → { "success": true, "token_preview": "eyJhbGciOi..." }
+node scripts/get_sales_report.js --fromDate=2026-03-01 --toDate=2026-03-05
+node scripts/get_low_stock.js --threshold=10
+node scripts/get_inventory.js --branchId=1
+node scripts/get_invoices.js --fromDate=2026-03-01
+node scripts/get_customers.js --orderBy=totalRevenue
+node scripts/get_orders.js --status=Processing
 ```
 
-## Scripts
+## Documentation
 
-| Script | Description | Example |
-|--------|-------------|---------|
-| `get_sales_report.js` | Revenue summary by date range | `node scripts/get_sales_report.js --fromDate=2026-03-01 --toDate=2026-03-05` |
-| `get_top_products.js` | Best-selling products | `node scripts/get_top_products.js --fromDate=2026-03-01 --limit=10` |
-| `get_inventory.js` | Current stock levels | `node scripts/get_inventory.js --branchId=1` |
-| `get_low_stock.js` | Products below threshold | `node scripts/get_low_stock.js --threshold=10` |
-| `get_orders.js` | Recent orders by status | `node scripts/get_orders.js --status=Processing --limit=20` |
-| `get_invoices.js` | Invoices with overdue detection | `node scripts/get_invoices.js --fromDate=2026-03-01` |
-| `get_customers.js` | Top customers by spend | `node scripts/get_customers.js --orderBy=totalRevenue --limit=10` |
-| `get_customer_summary.js` | Full profile for one customer | `node scripts/get_customer_summary.js --id=12345` |
+- [docs/SETUP.md](docs/SETUP.md) — Step-by-step onboarding guide
+- [docs/WORKFLOWS.md](docs/WORKFLOWS.md) — Workflow documentation with sample outputs
+- [docs/CHANNELS.md](docs/CHANNELS.md) — Discord + Telegram setup
 
-## Authentication
+## Tech Stack
 
-`api_client.js` handles OAuth 2.0 `client_credentials` flow automatically:
-- Fetches token from `https://id.kiotviet.vn/connect/token`
-- Caches token in `scripts/.token` for 24h (gitignored)
-- Auto-refreshes on expiry
-- Attaches `Authorization: Bearer` + `Retailer` headers to every request
+- **Backend**: Pure Node.js (zero npm dependencies)
+- **Dashboard**: Next.js 16, React 19, Tailwind CSS 4, shadcn/ui
+- **API**: KiotViet Public API (OAuth 2.0 client_credentials)
+- **Rate limit**: 5,000 requests/hour with automatic retry on 429/5xx
 
-## API Reference
+## License
 
-Base URL: `https://public.kiotapi.com`
-Rate limit: 5,000 requests/hour
-Docs: https://developer.kiotviet.vn/
-
-## OpenClaw Cron Jobs
-
-Three pre-configured cron jobs are included in this repo (`cron/jobs.json`):
-
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| `daily-kiotviet-sales` | 8 AM daily | Sales report + top 5 products in Vietnamese |
-| `daily-kiotviet-inventory` | 9 AM daily | Low stock alert (< 10 units) |
-| `weekly-kiotviet-report` | 9 AM Monday | Weekly executive summary |
-
-To activate, copy jobs into `/home/oc-kevin/.openclaw/cron/jobs.json` and set `"enabled": true`.
+Private — All rights reserved.
