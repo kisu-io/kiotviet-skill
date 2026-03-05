@@ -1,64 +1,29 @@
 {
   "jobs": [
     {
-      "id": "daily-kiotviet-sales",
-      "agentId": "universal-team",
-      "name": "daily-kiotviet-sales",
+      "id": "daily-sales",
+      "name": "daily-sales",
       "enabled": false,
-      "schedule": {
-        "expr": "0 8 * * *",
-        "kind": "cron"
-      },
-      "sessionTarget": "isolated",
-      "wakeMode": "now",
-      "payload": {
-        "kind": "agentTurn",
-        "message": "Run the kiotviet skill to get today's sales report and top 5 products. Format as a clear daily business summary in Vietnamese. Include total revenue, number of invoices, and top sellers."
-      },
-      "delivery": {
-        "mode": "announce",
-        "channel": "discord"
-      }
+      "schedule": "0 8 * * *",
+      "script": "scripts/get_sales_report.js",
+      "description": "Daily sales report + top 5 products"
     },
     {
-      "id": "daily-kiotviet-inventory",
-      "agentId": "universal-team",
-      "name": "daily-kiotviet-inventory",
+      "id": "daily-inventory",
+      "name": "daily-inventory",
       "enabled": false,
-      "schedule": {
-        "expr": "0 9 * * *",
-        "kind": "cron"
-      },
-      "sessionTarget": "isolated",
-      "wakeMode": "now",
-      "payload": {
-        "kind": "agentTurn",
-        "message": "Check KiotViet inventory for products with stock below 10 units. If any found, post an alert with product names, current stock, and suggested reorder quantities."
-      },
-      "delivery": {
-        "mode": "announce",
-        "channel": "discord"
-      }
+      "schedule": "0 9 * * *",
+      "script": "scripts/get_low_stock.js",
+      "args": "--threshold=10",
+      "description": "Low stock alert for products below 10 units"
     },
     {
-      "id": "weekly-kiotviet-report",
-      "agentId": "universal-team",
-      "name": "weekly-kiotviet-report",
+      "id": "weekly-report",
+      "name": "weekly-report",
       "enabled": false,
-      "schedule": {
-        "expr": "0 9 * * 1",
-        "kind": "cron"
-      },
-      "sessionTarget": "isolated",
-      "wakeMode": "now",
-      "payload": {
-        "kind": "agentTurn",
-        "message": "Generate a weekly KiotViet business summary: revenue vs last week, top 10 products, new customers acquired, pending/overdue invoices. Present as an executive summary."
-      },
-      "delivery": {
-        "mode": "announce",
-        "channel": "discord"
-      }
+      "schedule": "0 9 * * 1",
+      "script": "scripts/get_sales_report.js",
+      "description": "Weekly executive business summary"
     }
   ]
 }
