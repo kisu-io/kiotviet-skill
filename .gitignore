@@ -1,0 +1,4 @@
+scripts/.token
+.env
+*.env
+node_modules/

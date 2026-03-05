@@ -1,0 +1,8 @@
+{
+  "name": "kiotviet-skill-node",
+  "version": "1.0.0",
+  "description": "KiotViet POS Integration Skill (Node.js) — No external dependencies",
+  "private": true,
+  "scripts": {},
+  "dependencies": {}
+}
