@@ -8,37 +8,45 @@
  *
  * KiotViet webhook format:
  *   POST /webhook/:shopId
- *   Headers: x-kiotviet-secret: <WEBHOOK_SECRET>
+ *   Headers: x-kiotviet-signature: <HMAC-SHA256 hex> (preferred)
+ *            x-kiotviet-secret: <plain secret> (fallback)
  *   Body: { Notifications: [{ Action: string, Data: object }] }
  *
  * Supported actions:
  *   order.create              → handlers/order-created.js
  *   product.updateQuantity    → handlers/low-stock.js
+ *   customer.update           → handlers/customer-updated.js
+ *   invoice.update            → handlers/invoice-updated.js
  *
  * Environment variables:
  *   PORT                 — Server port (default: 4000)
- *   WEBHOOK_SECRET       — Shared secret to validate incoming requests
+ *   WEBHOOK_SECRET       — Shared secret; used as HMAC key for signature validation
  *
  * Usage:
  *   node webhooks/server.js [--port=4000]
  */
 
 const http = require('http');
+const crypto = require('crypto');
 const { parseArgs } = require('../src/config/loader');
 
 const orderCreatedHandler = require('./handlers/order-created');
 const lowStockHandler = require('./handlers/low-stock');
+const customerUpdatedHandler = require('./handlers/customer-updated');
+const invoiceUpdatedHandler = require('./handlers/invoice-updated');
 
 const ACTION_MAP = {
   'order.create': orderCreatedHandler,
   'product.updateQuantity': lowStockHandler,
+  'customer.update': customerUpdatedHandler,
+  'invoice.update': invoiceUpdatedHandler,
 };
 
 function _readBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', (chunk) => (body += chunk));
-    req.on('end', () => resolve(body));
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
@@ -52,33 +60,76 @@ function _respond(res, status, data) {
   res.end(body);
 }
 
+/**
+ * Validate incoming webhook signature.
+ * Preferred: HMAC-SHA256 in x-kiotviet-signature header (hex digest of raw body).
+ * Fallback: plain-text match in x-kiotviet-secret header.
+ */
+function _validateSignature(req, rawBody, secret) {
+  if (!secret) return true; // no secret configured — accept all
+
+  const sigHeader = req.headers['x-kiotviet-signature'];
+  if (sigHeader) {
+    const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+    // Constant-time comparison to prevent timing attacks
+    if (sigHeader.length !== expected.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(sigHeader, 'hex'), Buffer.from(expected, 'hex'));
+  }
+
+  // Fallback: plain secret header
+  const plainHeader = req.headers['x-kiotviet-secret'];
+  if (plainHeader) {
+    return plainHeader === secret;
+  }
+
+  return false;
+}
+
+/**
+ * Retry a handler call with exponential backoff.
+ * Retries up to maxRetries times on failure.
+ */
+async function _withRetry(fn, maxRetries = 2, baseDelayMs = 500) {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 async function _handleRequest(req, res) {
-  // Only accept POST
   if (req.method !== 'POST') {
     return _respond(res, 405, { error: 'Method Not Allowed' });
   }
 
-  // Route: /webhook/:shopId
   const match = req.url && req.url.match(/^\/webhook\/([^/?]+)/);
   if (!match) {
     return _respond(res, 404, { error: 'Not Found. Use POST /webhook/:shopId' });
   }
   const shopId = match[1];
 
-  // Validate secret if configured
-  const expectedSecret = process.env.WEBHOOK_SECRET;
-  if (expectedSecret) {
-    const incoming = req.headers['x-kiotviet-secret'];
-    if (incoming !== expectedSecret) {
-      return _respond(res, 401, { error: 'Invalid webhook secret' });
-    }
+  // Read raw body first (needed for HMAC)
+  const rawBody = await _readBody(req);
+
+  // Validate signature
+  const secret = process.env.WEBHOOK_SECRET;
+  if (!_validateSignature(req, rawBody, secret)) {
+    console.warn(`[webhook] Invalid signature for shopId=${shopId}`);
+    return _respond(res, 401, { error: 'Invalid webhook signature' });
   }
 
-  // Parse body
+  // Parse JSON
   let payload;
   try {
-    const raw = await _readBody(req);
-    payload = JSON.parse(raw);
+    payload = JSON.parse(rawBody.toString('utf-8'));
   } catch (e) {
     return _respond(res, 400, { error: `Invalid JSON: ${e.message}` });
   }
@@ -88,7 +139,7 @@ async function _handleRequest(req, res) {
     return _respond(res, 200, { ok: true, handled: 0 });
   }
 
-  // Dispatch by action
+  // Dispatch by action (deduplicate same action in one request)
   const results = [];
   const seenHandlers = new Set();
 
@@ -101,19 +152,19 @@ async function _handleRequest(req, res) {
       continue;
     }
 
-    // Deduplicate: call each handler once per request with the full payload
     if (seenHandlers.has(action)) continue;
     seenHandlers.add(action);
 
     try {
-      const result = await handler.handle(shopId, payload);
+      const result = await _withRetry(() => handler.handle(shopId, payload));
       results.push({ action, status: 'ok', ...result });
     } catch (e) {
-      console.error(`[webhook] Error handling ${action}:`, e.message);
+      console.error(`[webhook] Error handling ${action} for shopId=${shopId}:`, e.message);
       results.push({ action, status: 'error', error: e.message });
     }
   }
 
+  console.log(`[webhook] shopId=${shopId} actions=${results.map((r) => r.action).join(',')}`);
   _respond(res, 200, { ok: true, shopId, results });
 }
 
@@ -130,9 +181,7 @@ function startServer(port) {
   server.listen(port, () => {
     console.log(`[webhook] Server listening on port ${port}`);
     console.log(`[webhook] Endpoint: POST http://localhost:${port}/webhook/:shopId`);
-    if (!process.env.WEBHOOK_SECRET) {
-      console.warn('[webhook] WARNING: WEBHOOK_SECRET not set — requests will not be validated');
-    }
+    console.log(`[webhook] HMAC-SHA256 signature validation: ${process.env.WEBHOOK_SECRET ? 'ENABLED' : 'DISABLED (set WEBHOOK_SECRET)'}`);
   });
 
   server.on('error', (e) => {
