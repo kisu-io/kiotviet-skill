@@ -12,6 +12,21 @@
     "telegram": {
       "botToken": "",
       "chatId": ""
+    },
+    "zalo": {
+      "oaAccessToken": "",
+      "oaId": "",
+      "ownerUserId": ""
+    }
+  },
+  "alerts": {
+    "revenueAnomaly": {
+      "enabled": true,
+      "warningDeviationPct": 30,
+      "criticalDeviationPct": 50,
+      "baselineWeeks": 4,
+      "quietHoursStart": 22,
+      "quietHoursEnd": 7
     }
   },
   "workflows": {

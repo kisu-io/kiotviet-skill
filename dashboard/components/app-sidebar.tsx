@@ -12,6 +12,7 @@ import {
     Settings,
     Store,
     Zap,
+    Bell,
 } from "lucide-react";
 
 import {
@@ -56,6 +57,11 @@ const navAutomation = [
         title: "Quy trình",
         url: "/workflows",
         icon: Workflow,
+    },
+    {
+        title: "Cảnh báo",
+        url: "/alerts",
+        icon: Bell,
     },
     {
         title: "Kênh gửi",

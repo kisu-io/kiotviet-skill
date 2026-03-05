@@ -56,11 +56,11 @@
     {
       "id": "anomaly-check",
       "name": "anomaly-check",
-      "enabled": false,
+      "enabled": true,
       "schedule": "0 * * * *",
-      "script": "src/intelligence/anomaly-detector.js",
+      "script": "src/workflows/revenue-anomaly-hourly.js",
       "args": "--shopId=example-shop",
-      "description": "Hourly anomaly detection: flags >30% deviation from 4-week same-hour average"
+      "description": "Hourly revenue anomaly: z-score vs 4-week same-weekday/hour baseline, alerts on >30% deviation"
     },
     {
       "id": "customer-winback",

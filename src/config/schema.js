@@ -6,6 +6,17 @@ const DEFAULTS = {
     primary: 'discord',
     discord: { webhookUrl: '' },
     telegram: { botToken: '', chatId: '' },
+    zalo: { oaAccessToken: '', oaId: '', ownerUserId: '' },
+  },
+  alerts: {
+    revenueAnomaly: {
+      enabled: true,
+      warningDeviationPct: 30,
+      criticalDeviationPct: 50,
+      baselineWeeks: 4,
+      quietHoursStart: 22,
+      quietHoursEnd: 7,
+    },
   },
   workflows: {
     dailyBriefing: true,
@@ -35,6 +46,11 @@ function validate(config) {
     ...DEFAULTS,
     ...config,
     channels: { ...DEFAULTS.channels, ...config.channels },
+    alerts: {
+      ...DEFAULTS.alerts,
+      ...config.alerts,
+      revenueAnomaly: { ...DEFAULTS.alerts.revenueAnomaly, ...config.alerts?.revenueAnomaly },
+    },
     workflows: { ...DEFAULTS.workflows, ...config.workflows },
   };
 }
