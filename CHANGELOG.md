@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.0.0-alpha (2026-03-06)
+
+### Architecture & Security (Major Focus)
+- **Supabase Integration**: Transitioned from a stateless architecture to a persistent database model.
+- **SQL Migration**: Added `supabase/migrations/001_initial_schema.sql` defining `profiles`, `shops`, `user_shops`, and logging tables.
+- **Row Level Security (RLS)**: Implemented strict RLS matching Supabase Auth UUIDs to protect multi-tenant data.
+- **Next.js Auth Flow**: Completely rewrote the authentication flow (`/login`, `/register`) to use `@supabase/ssr` cookies instead of hardcoded passwords.
+
+### Dashboard Refactoring
+- **React Server Components (RSC)**: Initiated migration from client-side `useEffect` proxy endpoints to server-side rendering for optimal speed.
+- **Reusable UI Components**: Abstracted complex inline code from the Dashboard into shared `shadcn/ui` based components:
+  - `StatCard` (Dashboard, Inventory, Revenue pages)
+  - `RevenueAreaChart` (Recharts integration)
+  - `TopProductsTable`
+
 ## v1.0.0 (2026-03-05)
 
 ### Dashboard (New)
@@ -11,7 +26,6 @@
 - **Workflows**: View and configure all 4 automated workflows
 - **Channels**: Channel status (Discord, Telegram) with configuration state
 - **Settings**: Read/edit shop config, test connection, test channels, save settings
-- **Login**: Password-protected access via `DASHBOARD_PASSWORD` env var
 - 10 API routes bridging Next.js to Node.js backend modules
 
 ### Workflows (2 New)
@@ -37,12 +51,3 @@
 - `docs/WORKFLOWS.md`: All 4 workflows documented with sample output
 - `docs/CHANNELS.md`: Discord webhook + Telegram bot setup guide
 - `README.md`: Product-facing overview with architecture and quick start
-
-### v1.0 ships with
-- 9 API modules: invoices, products, customers, orders, suppliers, purchase-orders, branches, employees, promotions
-- 4 intelligence modules: demand-forecast, revenue-insights, customer-segments, pricing-advisor
-- 4 workflows: daily-briefing, smart-restock, invoice-reminder, weekly-report
-- 2 channels: Discord, Telegram + router
-- Dashboard: 7 pages with real KiotViet data, password-protected
-- Multi-tenant config: shops/*.json with env var overrides
-- 14 CLI scripts + complete onboarding docs

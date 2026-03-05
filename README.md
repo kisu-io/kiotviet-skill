@@ -1,10 +1,13 @@
 # KiotViet Gateway — Shop Automation SaaS
 
-AI-powered business intelligence and automation for Vietnamese SME shop owners on [KiotViet](https://www.kiotviet.vn/) POS. Real-time dashboard, automated workflows, and omnichannel notifications.
+AI-powered business intelligence and automation for Vietnamese SME shop owners on [KiotViet](https://www.kiotviet.vn/) POS. Features a real-time Next.js Dashboard, autonomous scheduled workflows, Supabase-backed authentication, and omnichannel notifications.
 
 ## Features
 
-**Dashboard** — Real-time KiotViet data across 7 pages: overview KPIs, inventory, orders, customer RFM segments, workflows, channels, settings. Password-protected.
+**Dashboard (Next.js App Router)** — Real-time KiotViet data across 7 secure pages: overview KPIs, inventory, orders, customer RFM segments, workflows, channels, settings.
+- **Supabase Auth**: Secure email/password login and session management.
+- **UI Components**: Extracted, reusable `shadcn/ui` components (StatCard, RevenueAreaChart, TopProductsTable).
+- **Architecture**: Migrating towards React Server Components (RSC) for maximum performance.
 
 **4 Automated Workflows**
 | Workflow | Schedule | What it does |
@@ -29,17 +32,17 @@ AI-powered business intelligence and automation for Vietnamese SME shop owners o
 ```bash
 # 1. Configure credentials
 cp .env.example .env
-# Edit .env with your KiotViet API credentials
+# Edit .env with your KiotViet API and Supabase credentials
 
-# 2. Configure shop
+# 2. Database Migration
+# Run the SQL script in supabase/migrations/001_initial_schema.sql on your Supabase project
+
+# 3. Configure shop
 cp shops/example-shop.json shops/my-shop.json
 # Edit with your retailer name
 
-# 3. Test connection
+# 4. Test connection
 node src/api/client.js
-
-# 4. Run your first report
-node src/workflows/daily-briefing.js --shopId=my-shop
 
 # 5. Start dashboard
 cd dashboard && npm install && npm run dev
@@ -51,16 +54,18 @@ See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions.
 ## Architecture
 
 ```
+dashboard/         — Next.js 16 dashboard UI (App Router) + Supabase SSR
+supabase/          — SQL migrations and database schema
 src/api/           — 9 KiotViet API modules (invoices, products, customers, etc.)
 src/intelligence/  — 4 AI analysis modules (demand forecast, RFM, pricing, revenue)
 src/workflows/     — 4 automated workflows (daily briefing, restock, invoice, weekly)
 src/channels/      — 2 notification channels (Discord, Telegram) + router
 src/config/        — Multi-tenant config loader + schema validation
-dashboard/         — Next.js 16 dashboard with 7 pages + API routes
 shops/             — Per-shop JSON configuration
 cron/              — Scheduled job definitions
 docs/              — Setup, workflow, and channel documentation
 scripts/           — 14 standalone CLI tools
+webhooks/          — Real-time event listener
 ```
 
 ## CLI Scripts
@@ -81,11 +86,14 @@ node scripts/get_orders.js --status=Processing
 - [docs/SETUP.md](docs/SETUP.md) — Step-by-step onboarding guide
 - [docs/WORKFLOWS.md](docs/WORKFLOWS.md) — Workflow documentation with sample outputs
 - [docs/CHANNELS.md](docs/CHANNELS.md) — Discord + Telegram setup
+- [CLAUDE.md](CLAUDE.md) — Agent dev guide
+- [AI_DEVELOPER_GUIDE.md](AI_DEVELOPER_GUIDE.md) — System architecture for contributors
 
 ## Tech Stack
 
-- **Backend**: Pure Node.js (zero npm dependencies)
-- **Dashboard**: Next.js 16, React 19, Tailwind CSS 4, shadcn/ui
+- **Auth & DB**: Supabase (PostgreSQL, Row Level Security, SSR Auth)
+- **Backend Core**: Pure Node.js (zero npm dependencies)
+- **Dashboard**: Next.js 16, React 19, Tailwind CSS 4, shadcn/ui, Recharts
 - **API**: KiotViet Public API (OAuth 2.0 client_credentials)
 - **Rate limit**: 5,000 requests/hour with automatic retry on 429/5xx
 
