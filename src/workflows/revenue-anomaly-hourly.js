@@ -67,6 +67,26 @@ async function runRevenueAnomalyCheck(shopId, options = {}) {
   _markAsRun(shopId, result.currentHour);
   _cleanOldLocks();
 
+  // Check quiet hours before sending (FR-7)
+  const alertCfg = config.alerts?.revenueAnomaly || {};
+  const quietStart = alertCfg.quietHoursStart ?? 22;
+  const quietEnd = alertCfg.quietHoursEnd ?? 7;
+  const currentHour = now.getHours();
+  const inQuietHours =
+    quietStart > quietEnd
+      ? currentHour >= quietStart || currentHour < quietEnd   // spans midnight
+      : currentHour >= quietStart && currentHour < quietEnd;  // same day
+
+  if (inQuietHours && !options.force) {
+    return {
+      shopId,
+      workflow: 'revenue-anomaly-hourly',
+      timestamp: new Date().toISOString(),
+      detection: result,
+      channelResult: { skipped: true, reason: `Quiet hours (${quietStart}:00–${quietEnd}:00)` },
+    };
+  }
+
   // Only send alert if anomaly detected
   let channelResult = { skipped: true, reason: 'no anomaly' };
   if (result.anomaly) {

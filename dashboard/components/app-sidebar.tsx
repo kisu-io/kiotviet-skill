@@ -13,6 +13,9 @@ import {
     Store,
     Zap,
     Bell,
+    TrendingUp,
+    Send,
+    Lightbulb,
 } from "lucide-react";
 
 import {
@@ -50,6 +53,11 @@ const navMain = [
         url: "/customers",
         icon: Users,
     },
+    {
+        title: "Doanh thu",
+        url: "/revenue",
+        icon: TrendingUp,
+    },
 ];
 
 const navAutomation = [
@@ -67,6 +75,16 @@ const navAutomation = [
         title: "Kênh gửi",
         url: "/channels",
         icon: Radio,
+    },
+    {
+        title: "Chiến dịch",
+        url: "/campaigns",
+        icon: Send,
+    },
+    {
+        title: "Hỏi Orbit",
+        url: "/ask",
+        icon: Lightbulb,
     },
 ];
 

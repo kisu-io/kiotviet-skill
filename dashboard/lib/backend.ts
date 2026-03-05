@@ -23,6 +23,8 @@ export function getBackend() {
   const { formatRevenueAnomalyAlert } = _require(path.join(SRC, "intelligence/formatters/revenue-anomaly"));
   const { getShopRevenueByHour } = _require(path.join(SRC, "api/revenue-hourly"));
   const { runRevenueAnomalyCheck } = _require(path.join(SRC, "workflows/revenue-anomaly-hourly"));
+  const { forecastDemand } = _require(path.join(SRC, "intelligence/demand-forecast"));
+  const { runCustomerWinback } = _require(path.join(SRC, "workflows/customer-winback"));
 
   return {
     loadShopConfig,
@@ -40,6 +42,8 @@ export function getBackend() {
     formatRevenueAnomalyAlert,
     getShopRevenueByHour,
     runRevenueAnomalyCheck,
+    forecastDemand,
+    runCustomerWinback,
   };
 }
 
